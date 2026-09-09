@@ -68,6 +68,10 @@
   #exList{margin-top:10px}
   .exrow{padding:10px 0;border-top:1px solid var(--hair);
     display:flex;align-items:center;gap:10px}
+  .exbx{padding:0;flex:0 0 20px;width:20px;height:20px;border-radius:6px}
+  .exrow.on .exn span{color:var(--mid)}
+  .exrow.on .exbx{background:var(--green-2);border-color:var(--green-2)}
+  .exrow.on .exbx svg{opacity:1}
   .exn{flex:1;min-width:0}
   .exn span{display:block;font-size:13.5px;line-height:1.25}
   .exn small{display:block;font-size:11.5px;color:var(--soft);margin-top:2px}
@@ -338,9 +342,10 @@ function toast(m){
 function buzz(){try{if(navigator.vibrate)navigator.vibrate(8);}catch(e){}}
 
 function day(d){
-  if(!state.days[d])state.days[d]={done:{},water:0,nota:''};
+  if(!state.days[d])state.days[d]={done:{},water:0,nota:'',ex:{}};
   var x=state.days[d];
   if(!x.done)x.done={};
+  if(!x.ex)x.ex={};
   if(typeof x.water!=='number')x.water=0;
   if(typeof x.nota!=='string')x.nota='';
   return x;
@@ -353,6 +358,12 @@ function count(d){
   return n+((x.water||0)>=8?1:0);
 }
 function isFull(d){return count(d)>=TOTAL;}
+function exDone(d){
+  var x=state.days[d];if(!x||!x.ex)return 0;
+  var wk=WK[pd(d).getDay()],n=0;
+  wk.ex.forEach(function(e){if(x.ex[e[0]])n++;});
+  return n;
+}
 function streak(){
   var n=0,d=today();
   if(!isFull(d))d=add(d,-1);
@@ -453,15 +464,32 @@ function paintEx(){
   host.innerHTML='';
   if(!showEx){
     host.classList.add('hidden');
-    $('exBtn').textContent='Ver exercícios e anotar carga';
+    var wk0=WK[pd(view).getDay()],n0=exDone(view);
+    $('exBtn').textContent=n0>0
+      ? ('Exercícios · '+n0+' de '+wk0.ex.length+' feitos')
+      : 'Ver exercícios e anotar carga';
     return;
   }
-  $('exBtn').textContent='Esconder exercícios';
   host.classList.remove('hidden');
   var wk=WK[pd(view).getDay()];
+  var d0=day(view);
+  $('exBtn').textContent='Esconder exercícios · '+exDone(view)+' de '+wk.ex.length;
   wk.ex.forEach(function(e){
     var name=e[0];
     var row=document.createElement('div');row.className='exrow';
+    if(d0.ex[name])row.classList.add('on');
+    var bx=document.createElement('button');bx.className='bx exbx';
+    bx.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" '+
+      'stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    bx.addEventListener('click',function(ev){
+      ev.stopPropagation();
+      var dd=day(view);
+      dd.ex[name]=!dd.ex[name];
+      if(dd.ex[name])row.classList.add('on');else row.classList.remove('on');
+      buzz();save();
+      $('exBtn').textContent='Esconder exercícios · '+exDone(view)+' de '+wk.ex.length;
+    });
+    row.appendChild(bx);
     var nm=document.createElement('div');nm.className='exn';
     var sp=document.createElement('span');sp.textContent=name;nm.appendChild(sp);
     if(wk.load){
