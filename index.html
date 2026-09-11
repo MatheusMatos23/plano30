@@ -78,6 +78,8 @@
     line-height:1.25;color:var(--ink)}
   .exlink i{font-style:normal;font-size:9px;color:var(--green-2);
     margin-left:7px;vertical-align:1px}
+  .sug{display:inline-block;margin-top:5px;font-size:11px;font-weight:600;
+    color:var(--green);background:var(--tint);border-radius:99px;padding:4px 9px}
   .exsw{flex:0 0 24px;width:24px;height:24px;padding:0;font-size:13px;color:var(--soft);
     border-radius:6px}
   .exsw:active{background:var(--tint)}
@@ -168,6 +170,19 @@
   .go{padding:14px 30px;background:var(--green);color:#fff;border-radius:11px;
     font-size:15px;font-weight:600}
 
+  .inf{flex:0 0 22px;width:22px;height:22px;border-radius:50%;padding:0;
+    border:1px solid var(--line);font-size:11px;font-weight:700;color:var(--soft);
+    font-style:italic;line-height:1}
+  .inf.open{background:var(--green-2);border-color:var(--green-2);color:#fff}
+  .det{padding:2px 0 12px 34px;border-bottom:1px solid var(--hair)}
+  .deth{margin:8px 0 4px;font-size:12px;font-weight:700;color:var(--green)}
+  .det ul{margin:0;padding-left:16px}
+  .det li{font-size:12.5px;color:var(--mid);line-height:1.5}
+  .detf{margin:10px 0 0;font-size:11.5px;color:var(--soft);line-height:1.5}
+  .ck{background:#FFF8E9;border:1px solid #E8D9B0;border-left:3px solid #C08A1E;
+    border-radius:14px;padding:14px 16px;margin-bottom:10px}
+  .ck b{display:block;font-size:13px;color:#7A5510;margin-bottom:5px}
+  .ck p{margin:0;font-size:12.5px;color:#6B5526;line-height:1.55}
   .sum{display:flex;gap:8px}
   .sum div{flex:1;text-align:center;padding:10px 4px;background:#FAFBFA;
     border:1px solid var(--line);border-radius:10px}
@@ -282,6 +297,13 @@
       </div>
     </section>
 
+    <div class="ck hidden" id="ck">
+      <b>Checkpoint do dia 15</b>
+      <p>Pare e avalie antes de seguir: as cargas subiram ou pelo menos se mantiveram?
+      O sono está inteiro? A cintura desceu? Se a resposta for não para carga ou sono,
+      vá para 1.700 kcal na segunda metade.</p>
+    </div>
+
     <div class="alert">
       <button id="alertBtn"><span>Quando subir para 2.000 kcal</span><span id="alertArrow">+</span></button>
       <p id="alertTxt" class="hidden">Se dois destes durarem mais de 3 dias — carga caindo, tontura,
@@ -318,12 +340,30 @@ var TASKS=[
   {id:'sono',t:'Dormi 8 horas',s:'requisito, não meta'}
 ];
 var MEALS=[
-  {id:'cafe',t:'Café da manhã',s:'~350 kcal · 40 g proteína'},
-  {id:'almoco',t:'Almoço',s:'~500 kcal · 55 g proteína'},
-  {id:'lanche',t:'Lanche',s:'~250 kcal · 35 g proteína'},
-  {id:'jantar',t:'Jantar',s:'~450 kcal · 45 g proteína'},
-  {id:'ceia',t:'Ceia',s:'~150 kcal · 25 g proteína'}
+  {id:'cafe',t:'Café da manhã',s:'~290 kcal · 34 g proteína',o:[
+    ['A · 292 kcal · 34 g P',['1 dose de whey (30 g) na água','35 g de aveia','100 g de iogurte natural desnatado']],
+    ['B · 256 kcal · 27 g P',['2 ovos inteiros + 3 claras, mexidos','1 fatia de pão integral (25 g)']],
+    ['C · 274 kcal · 44 g P',['130 g de frango desfiado (peso cozido)','1 fatia de pão integral (25 g)','Café sem açúcar']]]},
+  {id:'almoco',t:'Almoço',s:'~450 kcal · 50 g proteína',o:[
+    ['A · 475 kcal · 51 g P',['150 g de peito de frango grelhado','100 g de arroz cozido (4 colheres de sopa)','80 g de feijão cozido (1 concha)','Salada à vontade + 1 colher de chá de azeite']],
+    ['B · 418 kcal · 48 g P',['150 g de patinho ou coxão mole grelhado','120 g de batata doce cozida','Legumes refogados sem óleo, à vontade']],
+    ['C · 430 kcal · 48 g P',['180 g de tilápia grelhada','100 g de arroz cozido (4 colheres de sopa)','Brócolis e cenoura + 1 colher de chá de azeite']]]},
+  {id:'lanche',t:'Lanche',s:'~210 kcal · 25 g proteína',o:[
+    ['A · 220 kcal · 30 g P',['1 dose de whey (30 g)','100 g de iogurte natural desnatado','1 porção de fruta']],
+    ['B · 185 kcal · 24 g P',['1 dose de whey (30 g)','1 porção de fruta']],
+    ['C · 205 kcal · 21 g P',['1 ovo cozido + 4 claras','1 porção de fruta']]]},
+  {id:'jantar',t:'Jantar',s:'~355 kcal · 45 g proteína',o:[
+    ['A · 351 kcal · 47 g P',['150 g de peito de frango grelhado','50 g de arroz cozido (2 colheres de sopa)','Salada grande + 1 colher de chá de azeite']],
+    ['B · 365 kcal · 45 g P',['150 g de carne moída de patinho (escorrida)','Abobrinha, berinjela e legumes à vontade','Meia colher de chá de azeite']],
+    ['C · 344 kcal · 44 g P',['170 g de tilápia grelhada','100 g de batata doce cozida','Salada grande + 1 colher de chá de azeite']]]},
+  {id:'ceia',t:'Ceia',s:'~120 kcal · 24 g proteína',o:[
+    ['A · 120 kcal · 24 g P',['1 dose de whey (30 g) na água']],
+    ['B · 130 kcal · 24 g P',['200 g de iogurte natural desnatado','+ meia dose de whey']],
+    ['C · 104 kcal · 22 g P',['6 claras mexidas (200 g) com sal e orégano']]]}
 ];
+var FRUTAS='1 porção ≈ 65 kcal: banana prata 70 g · maçã 130 g · laranja 130 g · '+
+  'mamão 130 g · abacaxi 130 g · manga 100 g · uva 100 g · melancia 200 g · '+
+  'melão 200 g · morango 250 g · kiwi 2 un. Qualquer fruta serve — muda a quantidade.';
 var WK={
   1:{n:'Superiores A',sub:'empurrar',c:'20 min esteira, inclinação 10%',load:true,ex:[
     ['Supino reto com halteres','4×8-10'],['Supino inclinado','3×10-12'],
@@ -487,7 +527,32 @@ function buildRows(host,list){
       if(d.done[o.id])row.classList.add('on');else row.classList.remove('on');
       buzz();save();paintProgress();paintSum();
     });
+    var det=null;
+    if(o.o){
+      var inf=document.createElement('button');inf.className='inf';inf.textContent='i';
+      row.appendChild(inf);
+      det=document.createElement('div');det.className='det hidden';
+      o.o.forEach(function(op){
+        var h=document.createElement('p');h.className='deth';h.textContent=op[0];
+        det.appendChild(h);
+        var ul=document.createElement('ul');
+        op[1].forEach(function(li){
+          var l=document.createElement('li');l.textContent=li;ul.appendChild(l);
+        });
+        det.appendChild(ul);
+      });
+      if(o.id==='lanche'){
+        var fp=document.createElement('p');fp.className='detf';fp.textContent=FRUTAS;
+        det.appendChild(fp);
+      }
+      inf.addEventListener('click',function(ev){
+        ev.stopPropagation();
+        det.classList.toggle('hidden');
+        inf.classList.toggle('open');
+      });
+    }
     host.appendChild(row);
+    if(det)host.appendChild(det);
   });
 }
 function buildGlasses(){
@@ -580,6 +645,15 @@ function paintEx(){
       if(dd.ex[name])row.classList.add('on');else row.classList.remove('on');
       buzz();save();
       $('exBtn').textContent='Esconder exercícios · '+exDone(view)+' de '+wk.ex.length;
+      if(exDone(view)===wk.ex.length&&!dd.done.treino){
+        dd.done.treino=true;save();
+        var tr=$('tasks').children,q;
+        for(q=0;q<tr.length;q++){
+          if(tr[q].getAttribute('data-id')==='treino')tr[q].classList.add('on');
+        }
+        toast('Treino completo — marquei na execução do dia.');
+        paintProgress();paintSum();
+      }
     });
     row.appendChild(bx);
     var nm=document.createElement('div');nm.className='exn';
@@ -622,8 +696,24 @@ function paintEx(){
         if(!state.loads[name])state.loads[name]={};
         if(inp.value==='')delete state.loads[name][view];
         else state.loads[name][view]=parseFloat(inp.value);
-        save();
+        save();paintEx();
       });
+      var pv=lastLoad(name,view);
+      if(pv&&weekOf(view)>=2&&inp.value===''){
+        var alvo=Math.round(pv.kg*1.05/2.5)*2.5;
+        if(alvo<=pv.kg)alvo=pv.kg+2.5;
+        var sug=document.createElement('button');sug.className='sug';
+        sug.textContent='meta '+nf(alvo)+' kg';
+        (function(a){
+          sug.addEventListener('click',function(ev){
+            ev.stopPropagation();
+            if(!state.loads[name])state.loads[name]={};
+            state.loads[name][view]=a;
+            save();paintEx();
+          });
+        })(alvo);
+        nm.appendChild(sug);
+      }
       row.appendChild(inp);
     }
     host.appendChild(row);
@@ -706,6 +796,10 @@ function paintDay(){
   $('peso').value=(lg.peso==null)?'':lg.peso;
   $('cintura').value=(lg.cintura==null)?'':lg.cintura;
   if(document.activeElement!==$('nota'))$('nota').value=d.nota;
+
+  var di=idx(today());
+  if(di>=15&&di<=17)$('ck').classList.remove('hidden');
+  else $('ck').classList.add('hidden');
 
   var lastDay=add(state.start,29);
   $('next').disabled=(view>=today()||view>=lastDay);
