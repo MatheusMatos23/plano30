@@ -170,6 +170,10 @@
   .go{padding:14px 30px;background:var(--green);color:#fff;border-radius:11px;
     font-size:15px;font-weight:600}
 
+  .plansel{display:flex;gap:4px;background:#F3F5F3;border-radius:9px;padding:3px;margin-bottom:6px}
+  .plansel button{flex:1;padding:7px 0;font-size:12px;color:var(--soft);border-radius:7px}
+  .plansel button.on{background:var(--card);color:var(--green);font-weight:700;
+    box-shadow:0 1px 2px rgba(19,26,22,.06)}
   .inf{flex:0 0 22px;width:22px;height:22px;border-radius:50%;padding:0;
     border:1px solid var(--line);font-size:11px;font-weight:700;color:var(--soft);
     font-style:italic;line-height:1}
@@ -258,7 +262,14 @@
     </section>
 
     <section class="card"><p class="lbl">Execução do dia</p><div id="tasks"></div></section>
-    <section class="card"><p class="lbl">Refeições · 1.700 kcal · 200 g de proteína</p><div id="meals"></div></section>
+    <section class="card">
+      <p class="lbl" id="mealsLbl">Refeições</p>
+      <div class="plansel">
+        <button data-plan="1500">1.500 kcal</button>
+        <button data-plan="1700">1.700 kcal</button>
+      </div>
+      <div id="meals"></div>
+    </section>
 
     <section class="card">
       <div class="wh">
@@ -330,7 +341,7 @@
 'use strict';
 
 var KEY='plano30:v2';
-var state={start:null,days:{},logs:{},loads:{},swaps:{}};
+var state={start:null,days:{},logs:{},loads:{},swaps:{},plan:'1500'};
 var view=null, showEx=false, armed=false, armTimer=null;
 
 var TASKS=[
@@ -339,28 +350,60 @@ var TASKS=[
   {id:'creatina',t:'Creatina 5 g',s:'todo dia, sem exceção'},
   {id:'sono',t:'Dormi 8 horas',s:'requisito, não meta'}
 ];
+var PLANOS={
+ '1500':{lbl:'1.500 kcal · 190 g de proteína',meals:{
+  cafe:{s:'~290 kcal · 34 g proteína',o:[
+   ['A · 292 kcal · 34 g P',['1 dose de whey (30 g) na água','35 g de aveia','100 g de iogurte natural desnatado']],
+   ['B · 256 kcal · 27 g P',['2 ovos inteiros + 3 claras, mexidos','1 fatia de pão integral (25 g)']],
+   ['C · 274 kcal · 44 g P',['130 g de frango desfiado (peso cozido)','1 fatia de pão integral (25 g)','Café sem açúcar']]]},
+  almoco:{s:'~450 kcal · 50 g proteína',o:[
+   ['A · 475 kcal · 51 g P',['150 g de peito de frango grelhado','100 g de arroz cozido (4 col. sopa)','80 g de feijão cozido (1 concha)','Salada à vontade + 1 col. chá de azeite']],
+   ['B · 418 kcal · 48 g P',['150 g de patinho ou coxão mole grelhado','120 g de batata doce cozida','Legumes refogados sem óleo, à vontade']],
+   ['C · 430 kcal · 48 g P',['180 g de tilápia grelhada','100 g de arroz cozido (4 col. sopa)','Brócolis e cenoura + 1 col. chá de azeite']]]},
+  lanche:{s:'~210 kcal · 25 g proteína',o:[
+   ['A · 220 kcal · 30 g P',['1 dose de whey (30 g)','100 g de iogurte natural desnatado','1 porção de fruta']],
+   ['B · 185 kcal · 24 g P',['1 dose de whey (30 g)','1 porção de fruta']],
+   ['C · 205 kcal · 21 g P',['1 ovo cozido + 4 claras','1 porção de fruta']]]},
+  jantar:{s:'~355 kcal · 45 g proteína',o:[
+   ['A · 351 kcal · 47 g P',['150 g de peito de frango grelhado','50 g de arroz cozido (2 col. sopa)','Salada grande + 1 col. chá de azeite']],
+   ['B · 365 kcal · 45 g P',['150 g de carne moída de patinho (escorrida)','Abobrinha, berinjela e legumes à vontade','Meia col. chá de azeite']],
+   ['C · 344 kcal · 44 g P',['170 g de tilápia grelhada','100 g de batata doce cozida','Salada grande + 1 col. chá de azeite']]]},
+  ceia:{s:'~120 kcal · 24 g proteína',o:[
+   ['A · 120 kcal · 24 g P',['1 dose de whey (30 g) na água']],
+   ['B · 130 kcal · 24 g P',['200 g de iogurte natural desnatado + meia dose de whey']],
+   ['C · 104 kcal · 22 g P',['6 claras mexidas (200 g) com sal e orégano']]]}
+ }},
+ '1700':{lbl:'1.700 kcal · 200 g de proteína',meals:{
+  cafe:{s:'~320 kcal · 40 g proteína',o:[
+   ['A · 346 kcal · 41 g P',['1 dose de whey (30 g) na água','40 g de aveia','200 g de iogurte natural desnatado']],
+   ['B · 316 kcal · 37 g P',['2 ovos inteiros + 3 claras, mexidos','1 fatia de pão integral (25 g)','200 g de iogurte natural desnatado']],
+   ['C · 307 kcal · 49 g P',['150 g de frango desfiado (peso cozido)','1 fatia de pão integral (25 g)','Café sem açúcar']]]},
+  almoco:{s:'~470 kcal · 54 g proteína',o:[
+   ['A · 483 kcal · 55 g P',['170 g de peito de frango grelhado','100 g de arroz cozido (4 col. sopa)','40 g de feijão cozido (meia concha)','Salada à vontade + 1 col. chá de azeite']],
+   ['B · 456 kcal · 55 g P',['170 g de patinho ou coxão mole grelhado','120 g de batata doce cozida','Legumes refogados sem óleo, à vontade']],
+   ['C · 454 kcal · 53 g P',['200 g de tilápia grelhada','100 g de arroz cozido (4 col. sopa)','Brócolis e cenoura + 1 col. chá de azeite']]]},
+  lanche:{s:'~250 kcal · 30 g proteína',o:[
+   ['A · 255 kcal · 36 g P',['1 dose de whey (30 g)','200 g de iogurte natural desnatado','1 porção de fruta']],
+   ['B · 245 kcal · 26 g P',['1 dose de whey (30 g)','1 porção de fruta','10 g de castanhas']],
+   ['C · 261 kcal · 24 g P',['2 ovos cozidos + 3 claras','1 porção de fruta']]]},
+  jantar:{s:'~415 kcal · 50 g proteína',o:[
+   ['A · 404 kcal · 54 g P',['170 g de peito de frango grelhado','50 g de arroz cozido (2 col. sopa)','Salada grande + 1 col. chá de azeite']],
+   ['B · 437 kcal · 52 g P',['170 g de carne moída de patinho (escorrida)','Abobrinha, berinjela e legumes à vontade','1 col. chá de azeite']],
+   ['C · 412 kcal · 45 g P',['150 g de tilápia grelhada','100 g de batata doce cozida','Salada grande + 1 col. chá de azeite']]]},
+  ceia:{s:'~120 kcal · 24 g proteína',o:[
+   ['A · 120 kcal · 24 g P',['1 dose de whey (30 g) na água']],
+   ['B · 130 kcal · 24 g P',['200 g de iogurte natural desnatado + meia dose de whey']],
+   ['C · 104 kcal · 22 g P',['6 claras mexidas (200 g) com sal e orégano']]]}
+ }}
+};
 var MEALS=[
-  {id:'cafe',t:'Café da manhã',s:'~290 kcal · 34 g proteína',o:[
-    ['A · 292 kcal · 34 g P',['1 dose de whey (30 g) na água','35 g de aveia','100 g de iogurte natural desnatado']],
-    ['B · 256 kcal · 27 g P',['2 ovos inteiros + 3 claras, mexidos','1 fatia de pão integral (25 g)']],
-    ['C · 274 kcal · 44 g P',['130 g de frango desfiado (peso cozido)','1 fatia de pão integral (25 g)','Café sem açúcar']]]},
-  {id:'almoco',t:'Almoço',s:'~450 kcal · 50 g proteína',o:[
-    ['A · 475 kcal · 51 g P',['150 g de peito de frango grelhado','100 g de arroz cozido (4 colheres de sopa)','80 g de feijão cozido (1 concha)','Salada à vontade + 1 colher de chá de azeite']],
-    ['B · 418 kcal · 48 g P',['150 g de patinho ou coxão mole grelhado','120 g de batata doce cozida','Legumes refogados sem óleo, à vontade']],
-    ['C · 430 kcal · 48 g P',['180 g de tilápia grelhada','100 g de arroz cozido (4 colheres de sopa)','Brócolis e cenoura + 1 colher de chá de azeite']]]},
-  {id:'lanche',t:'Lanche',s:'~210 kcal · 25 g proteína',o:[
-    ['A · 220 kcal · 30 g P',['1 dose de whey (30 g)','100 g de iogurte natural desnatado','1 porção de fruta']],
-    ['B · 185 kcal · 24 g P',['1 dose de whey (30 g)','1 porção de fruta']],
-    ['C · 205 kcal · 21 g P',['1 ovo cozido + 4 claras','1 porção de fruta']]]},
-  {id:'jantar',t:'Jantar',s:'~355 kcal · 45 g proteína',o:[
-    ['A · 351 kcal · 47 g P',['150 g de peito de frango grelhado','50 g de arroz cozido (2 colheres de sopa)','Salada grande + 1 colher de chá de azeite']],
-    ['B · 365 kcal · 45 g P',['150 g de carne moída de patinho (escorrida)','Abobrinha, berinjela e legumes à vontade','Meia colher de chá de azeite']],
-    ['C · 344 kcal · 44 g P',['170 g de tilápia grelhada','100 g de batata doce cozida','Salada grande + 1 colher de chá de azeite']]]},
-  {id:'ceia',t:'Ceia',s:'~120 kcal · 24 g proteína',o:[
-    ['A · 120 kcal · 24 g P',['1 dose de whey (30 g) na água']],
-    ['B · 130 kcal · 24 g P',['200 g de iogurte natural desnatado','+ meia dose de whey']],
-    ['C · 104 kcal · 22 g P',['6 claras mexidas (200 g) com sal e orégano']]]}
+  {id:'cafe',t:'Café da manhã'},
+  {id:'almoco',t:'Almoço'},
+  {id:'lanche',t:'Lanche'},
+  {id:'jantar',t:'Jantar'},
+  {id:'ceia',t:'Ceia'}
 ];
+function planoAtual(){return PLANOS[state.plan||'1500'];}
 var FRUTAS='1 porção ≈ 65 kcal: banana prata 70 g · maçã 130 g · laranja 130 g · '+
   'mamão 130 g · abacaxi 130 g · manga 100 g · uva 100 g · melancia 200 g · '+
   'melão 200 g · morango 250 g · kiwi 2 un. Qualquer fruta serve — muda a quantidade.';
@@ -407,7 +450,7 @@ function load(){
     var r=localStorage.getItem(KEY);
     if(r){var o=JSON.parse(r);
       state.start=o.start||null;state.days=o.days||{};
-      state.logs=o.logs||{};state.loads=o.loads||{};state.swaps=o.swaps||{};}
+      state.logs=o.logs||{};state.loads=o.loads||{};state.swaps=o.swaps||{};state.plan=o.plan||'1500';}
   }catch(e){}
 }
 var saveT=null;
@@ -518,7 +561,9 @@ function buildRows(host,list){
       'stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
     var txt=document.createElement('div');
     var t=document.createElement('div');t.className='rt';t.textContent=o.t;
-    var s=document.createElement('div');s.className='rs';s.textContent=o.s;
+    var s=document.createElement('div');s.className='rs';
+    s.textContent=o.s||'';
+    if(!o.s)s.setAttribute('data-sub',o.id);
     txt.appendChild(t);txt.appendChild(s);
     row.appendChild(bx);row.appendChild(txt);
     row.addEventListener('click',function(){
@@ -528,11 +573,12 @@ function buildRows(host,list){
       buzz();save();paintProgress();paintSum();
     });
     var det=null;
-    if(o.o){
+    if(!o.s){
       var inf=document.createElement('button');inf.className='inf';inf.textContent='i';
       row.appendChild(inf);
       det=document.createElement('div');det.className='det hidden';
-      o.o.forEach(function(op){
+      det.setAttribute('data-det',o.id);
+      planoAtual().meals[o.id].o.forEach(function(op){
         var h=document.createElement('p');h.className='deth';h.textContent=op[0];
         det.appendChild(h);
         var ul=document.createElement('ul');
@@ -719,6 +765,39 @@ function paintEx(){
     host.appendChild(row);
   });
 }
+function paintMeals(){
+  var pl=planoAtual();
+  $('mealsLbl').textContent='Refeições · '+pl.lbl;
+  var subs=document.querySelectorAll('[data-sub]'),i;
+  for(i=0;i<subs.length;i++){
+    subs[i].textContent=pl.meals[subs[i].getAttribute('data-sub')].s;
+  }
+  var dets=document.querySelectorAll('[data-det]'),j;
+  for(j=0;j<dets.length;j++){
+    (function(box){
+      var id=box.getAttribute('data-det'),aberto=!box.classList.contains('hidden');
+      box.innerHTML='';
+      pl.meals[id].o.forEach(function(op){
+        var h=document.createElement('p');h.className='deth';h.textContent=op[0];
+        box.appendChild(h);
+        var ul=document.createElement('ul');
+        op[1].forEach(function(li){
+          var l=document.createElement('li');l.textContent=li;ul.appendChild(l);
+        });
+        box.appendChild(ul);
+      });
+      if(id==='lanche'){
+        var fp=document.createElement('p');fp.className='detf';fp.textContent=FRUTAS;
+        box.appendChild(fp);
+      }
+      if(!aberto)box.classList.add('hidden');
+    })(dets[j]);
+  }
+  var pb=document.querySelectorAll('.plansel button'),k;
+  for(k=0;k<pb.length;k++){
+    pb[k].className=(pb[k].getAttribute('data-plan')===(state.plan||'1500'))?'on':'';
+  }
+}
 function paintSum(){
   var done=0,partial=0,i,t=today(),elapsed=0;
   for(i=0;i<30;i++){
@@ -808,7 +887,7 @@ function paintDay(){
   $('cur').className=(view===today())?'on':'';
   $('prev').className=(view!==today()&&view<today())?'on':'';
 
-  paintWater();paintEx();paintHist();paintSum();paintProgress();
+  paintWater();paintEx();paintMeals();paintHist();paintSum();paintProgress();
 }
 
 function wire(){
@@ -823,6 +902,16 @@ function wire(){
     })(rb[ri]);
   }
   $('tstop').addEventListener('click',stopTimer);
+  var pbs=document.querySelectorAll('.plansel button'),pi;
+  for(pi=0;pi<pbs.length;pi++){
+    (function(btn){
+      btn.addEventListener('click',function(){
+        state.plan=btn.getAttribute('data-plan');
+        save();paintMeals();
+        toast('Dieta de '+planoAtual().lbl.split(' ·')[0]+' ativa.');
+      });
+    })(pbs[pi]);
+  }
 
   $('alertBtn').addEventListener('click',function(){
     var p=$('alertTxt'),open=!p.classList.contains('hidden');
@@ -861,7 +950,7 @@ function wire(){
           var o=JSON.parse(r.result);
           if(!o||!o.start)throw new Error('formato');
           state.start=o.start;state.days=o.days||{};
-          state.logs=o.logs||{};state.loads=o.loads||{};state.swaps=o.swaps||{};
+          state.logs=o.logs||{};state.loads=o.loads||{};state.swaps=o.swaps||{};state.plan=o.plan||'1500';
           save();start();toast('Backup restaurado.');
         }catch(e){toast('Arquivo inválido. Use um backup deste app.');}
       };
@@ -874,7 +963,7 @@ function wire(){
     var b=$('reset');
     if(armed){
       clearTimeout(armTimer);armed=false;
-      state.start=null;state.days={};state.logs={};state.loads={};state.swaps={};
+      state.start=null;state.days={};state.logs={};state.loads={};state.swaps={};state.plan='1500';
       try{localStorage.removeItem(KEY);}catch(e){}
       b.classList.remove('armed');
       b.textContent='Recomeçar o desafio do zero';
