@@ -159,6 +159,32 @@
     background:var(--card)}
   textarea{min-height:66px;resize:vertical;line-height:1.5;font-size:15px}
   ::placeholder{color:#BCC5BF}
+  .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .mf label{display:block;font-size:11.5px;color:var(--faint);margin-bottom:5px}
+  .mwrap{position:relative}
+  .mwrap .un{position:absolute;right:11px;top:50%;transform:translateY(-50%);
+    font-size:11.5px;color:var(--faint);pointer-events:none}
+  .mwrap input[type=number]{padding-right:34px}
+  .howbtn{width:100%;margin-top:12px;padding:10px;font-size:12px;font-weight:600;
+    background:#F5F7F5;color:var(--mid);border-radius:10px;display:flex;
+    align-items:center;justify-content:center;gap:8px}
+  .how{margin-top:10px;padding:14px 16px;background:#FAFBFA;border-radius:12px}
+  .how p{margin:0 0 10px;font-size:12px;color:var(--mid);line-height:1.6}
+  .how ul{margin:0;padding-left:17px}
+  .how li{font-size:12px;color:var(--mid);line-height:1.7}
+  .how b{color:var(--ink);font-weight:600}
+  .howtip{margin:11px 0 0!important;font-size:11.5px!important;color:var(--faint)!important}
+  .htitle{font-size:11.5px;font-weight:600;color:var(--soft);margin:16px 0 2px}
+  .mrow{display:flex;align-items:baseline;gap:10px;padding:9px 0;
+    border-top:1px solid var(--hair);font-size:13px}
+  .mrow .mn{flex:1;color:var(--soft);min-width:0}
+  .mrow .mv{font-weight:600;white-space:nowrap}
+  .mrow .mv em{font-style:normal;font-weight:400;color:var(--faint);font-size:11.5px;
+    margin-left:7px}
+  .mrow .mdd{flex:0 0 58px;text-align:right;font-size:12px;font-weight:700}
+  .mdd.good{color:var(--g-500)}
+  .mdd.bad{color:var(--red)}
+  .mdd.flat{color:var(--faint);font-weight:500}
   .fields{display:flex;gap:10px}
   .fields label{flex:1;font-size:11.5px;color:var(--faint)}
   .fields input[type=number]{margin-top:6px}
@@ -320,9 +346,20 @@
 
     <section class="card">
       <p class="lbl">Medidas da semana</p>
-      <div class="fields">
-        <label>Peso (kg)<input type="number" step="0.1" inputmode="decimal" id="peso" placeholder="93,0"></label>
-        <label>Cintura (cm)<input type="number" step="0.5" inputmode="decimal" id="cintura" placeholder="104"></label>
+      <div class="mgrid" id="mgrid"></div>
+      <button class="howbtn" id="howBtn"><span>Como medir</span><span id="howArrow">+</span></button>
+      <div id="how" class="how hidden">
+        <p><b>Sempre nas mesmas condições:</b> de manhã, em jejum, antes de treinar,
+        fita justa mas sem apertar a pele, músculo relaxado.</p>
+        <ul>
+          <li><b>Cintura</b> — na altura do umbigo, sem prender a barriga</li>
+          <li><b>Quadril</b> — na parte mais larga do glúteo</li>
+          <li><b>Tórax</b> — por baixo das axilas, braços relaxados, no fim de uma expiração normal</li>
+          <li><b>Braços</b> — no ponto mais grosso, braço solto ao lado do corpo</li>
+          <li><b>Coxas</b> — ponto médio entre o joelho e a virilha, em pé, peso dividido nos dois pés</li>
+        </ul>
+        <p class="howtip">Na primeira medição, anote a referência de cada ponto
+        (ex.: 22 cm acima do joelho). Medir em ponto diferente a cada semana produz número sem valor.</p>
       </div>
       <div id="hist"></div>
     </section>
@@ -366,7 +403,7 @@
       <button id="btnImport">Restaurar backup</button>
     </div>
     <button id="reset">Recomeçar o desafio do zero</button>
-    <p class="ver">versão 9 · 11 de setembro</p>
+    <p class="ver">versão 10 · 24 de setembro</p>
   </div>
 </div>
 
@@ -444,6 +481,17 @@ var MEALS=[
   {id:'ceia',t:'Ceia'}
 ];
 function planoAtual(){return PLANOS[state.plan||'1500'];}
+
+var MEDIDAS=[
+  {id:'peso',    t:'Peso',        un:'kg', ph:'93,0', st:'0.1', dir:'down'},
+  {id:'cintura', t:'Cintura',     un:'cm', ph:'104',  st:'0.5', dir:'down'},
+  {id:'quadril', t:'Quadril',     un:'cm', ph:'108',  st:'0.5', dir:'down'},
+  {id:'torax',   t:'Tórax',       un:'cm', ph:'110',  st:'0.5', dir:'keep'},
+  {id:'bracoD',  t:'Braço dir.',  un:'cm', ph:'36',   st:'0.5', dir:'keep'},
+  {id:'bracoE',  t:'Braço esq.',  un:'cm', ph:'36',   st:'0.5', dir:'keep'},
+  {id:'pernaD',  t:'Coxa dir.',   un:'cm', ph:'60',   st:'0.5', dir:'keep'},
+  {id:'pernaE',  t:'Coxa esq.',   un:'cm', ph:'60',   st:'0.5', dir:'keep'}
+];
 var FRUTAS='1 porção ≈ 65 kcal: banana prata 70 g · maçã 130 g · laranja 130 g · '+
   'mamão 130 g · abacaxi 130 g · manga 100 g · uva 100 g · melancia 200 g · '+
   'melão 200 g · morango 250 g · kiwi 2 un. Qualquer fruta serve — muda a quantidade.';
@@ -639,6 +687,27 @@ function buildRows(host,list){
     }
     host.appendChild(row);
     if(det)host.appendChild(det);
+  });
+}
+function buildMeasures(){
+  var host=$('mgrid');
+  MEDIDAS.forEach(function(m){
+    var f=document.createElement('div');f.className='mf';
+    var lb=document.createElement('label');lb.textContent=m.t;
+    lb.setAttribute('for','m_'+m.id);
+    var w=document.createElement('div');w.className='mwrap';
+    var inp=document.createElement('input');
+    inp.type='number';inp.step=m.st;inp.id='m_'+m.id;
+    inp.setAttribute('inputmode','decimal');inp.placeholder=m.ph;
+    var un=document.createElement('span');un.className='un';un.textContent=m.un;
+    inp.addEventListener('change',function(){
+      if(!state.logs[view])state.logs[view]={};
+      state.logs[view][m.id]=(inp.value==='')?null:parseFloat(inp.value);
+      save();paintHist();paintSum();
+    });
+    w.appendChild(inp);w.appendChild(un);
+    f.appendChild(lb);f.appendChild(w);
+    host.appendChild(f);
   });
 }
 function buildGlasses(){
@@ -866,28 +935,48 @@ function paintSum(){
   if(dif!==null)box((dif>0?'+':'')+nf(dif.toFixed(1))+' kg','desde o dia 1',dif<0?'neg':'');
   else box('—','peso: falta 2ª pesagem');
 }
-function paintHist(){
-  var ks=[],k,host=$('hist');
-  for(k in state.logs){if(state.logs[k]&&state.logs[k].peso!=null)ks.push(k);}
-  host.innerHTML='';
-  if(!ks.length)return;
+function valoresDe(id){
+  var ks=[],k;
+  for(k in state.logs){
+    if(state.logs[k]&&state.logs[k][id]!=null&&!isNaN(state.logs[k][id]))ks.push(k);
+  }
   ks.sort();
-  if(ks.length<2)return;
-  var first=state.logs[ks[0]].peso;
-  ks.slice(-6).forEach(function(key){
-    var l=state.logs[key],dif=l.peso-first;
-    var row=document.createElement('div');
-    var left=document.createElement('span');left.className='d';left.textContent='Dia '+idx(key);
-    var right=document.createElement('span');
-    var bEl=document.createElement('b');bEl.textContent=nf(l.peso)+' kg';
-    right.appendChild(bEl);
-    if(l.cintura!=null)right.appendChild(document.createTextNode(' · '+nf(l.cintura)+' cm'));
-    if(key!==ks[0]){
-      var kEl=document.createElement('span');kEl.className='k';
-      kEl.textContent=(dif>0?'+':'')+nf(dif.toFixed(1));
-      right.appendChild(kEl);
+  return ks;
+}
+function paintHist(){
+  var host=$('hist');host.innerHTML='';
+  var algum=false,i;
+  for(i=0;i<MEDIDAS.length;i++){if(valoresDe(MEDIDAS[i].id).length)algum=true;}
+  if(!algum)return;
+
+  var tit=document.createElement('p');tit.className='htitle';
+  tit.textContent='Comparação com a primeira medição';
+  host.appendChild(tit);
+
+  MEDIDAS.forEach(function(m){
+    var ks=valoresDe(m.id);
+    if(!ks.length)return;
+    var prim=state.logs[ks[0]][m.id];
+    var ult=state.logs[ks[ks.length-1]][m.id];
+    var dif=ult-prim;
+
+    var row=document.createElement('div');row.className='mrow';
+    var nm=document.createElement('span');nm.className='mn';nm.textContent=m.t;
+    var vl=document.createElement('span');vl.className='mv';
+    vl.appendChild(document.createTextNode(nf(ult)+' '+m.un));
+    if(ks.length>1){
+      var em=document.createElement('em');
+      em.textContent='dia '+idx(ks[0])+': '+nf(prim);
+      vl.appendChild(em);
     }
-    row.appendChild(left);row.appendChild(right);
+    var dd=document.createElement('span');dd.className='mdd';
+    if(ks.length<2){dd.className+=' flat';dd.textContent='—';}
+    else if(Math.abs(dif)<0.05){dd.className+=' flat';dd.textContent='0';}
+    else{
+      dd.className+=(m.dir==='down')?(dif<0?' good':' bad'):' flat';
+      dd.textContent=(dif>0?'+':'')+nf(dif.toFixed(1));
+    }
+    row.appendChild(nm);row.appendChild(vl);row.appendChild(dd);
     host.appendChild(row);
   });
 }
@@ -914,8 +1003,10 @@ function paintDay(){
   }
 
   var lg=state.logs[view]||{};
-  $('peso').value=(lg.peso==null)?'':lg.peso;
-  $('cintura').value=(lg.cintura==null)?'':lg.cintura;
+  MEDIDAS.forEach(function(m){
+    var el=$('m_'+m.id);
+    if(el&&document.activeElement!==el)el.value=(lg[m.id]==null)?'':lg[m.id];
+  });
   if(document.activeElement!==$('nota'))$('nota').value=d.nota;
 
   var di=idx(today());
@@ -955,19 +1046,18 @@ function wire(){
     })(pbs[pi]);
   }
 
+  $('howBtn').addEventListener('click',function(){
+    var h=$('how'),aberto=!h.classList.contains('hidden');
+    if(aberto){h.classList.add('hidden');$('howArrow').textContent='+';}
+    else{h.classList.remove('hidden');$('howArrow').textContent='–';}
+  });
+
   $('alertBtn').addEventListener('click',function(){
     var p=$('alertTxt'),open=!p.classList.contains('hidden');
     if(open){p.classList.add('hidden');$('alertArrow').textContent='+';}
     else{p.classList.remove('hidden');$('alertArrow').textContent='–';}
   });
 
-  ['peso','cintura'].forEach(function(f){
-    $(f).addEventListener('change',function(){
-      if(!state.logs[view])state.logs[view]={};
-      state.logs[view][f]=($(f).value==='')?null:parseFloat($(f).value);
-      save();paintHist();paintSum();
-    });
-  });
   $('nota').addEventListener('input',function(){day(view).nota=$('nota').value;save();});
 
   $('btnExport').addEventListener('click',function(){
@@ -1043,6 +1133,7 @@ function start(){
 load();
 buildRows($('tasks'),TASKS);
 buildRows($('meals'),MEALS);
+buildMeasures();
 buildGlasses();
 buildGrid();
 wire();
