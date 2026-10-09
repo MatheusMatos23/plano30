@@ -470,7 +470,7 @@
       <button id="btnImport">Restaurar backup</button>
     </div>
     <button id="reset">Recomeçar o desafio do zero</button>
-    <p class="ver">versão 11 · 9 de outubro</p>
+    <p class="ver">versão 12 · 9 de outubro</p>
   </div>
 </div>
 
@@ -1108,7 +1108,27 @@ function paintDay(){
   $('wkName').appendChild(document.createTextNode(wk.n+' '));
   var em=document.createElement('em');em.textContent='· '+wk.sub;
   $('wkName').appendChild(em);
-  $('wkCardio').textContent='Cardio: '+wk.c;
+  var wdN=pd(view).getDay(),f2=(state.phase||1)>=2;
+  var cardioTxt=wk.c;
+  if(f2){
+    if(wdN===3)cardioTxt=wk.c+' · caminhada de 30 min em outro horário';
+    else if(wdN===0)cardioTxt='corrida contínua de 35 min';
+    else if(wdN!==0)cardioTxt='30 min esteira inclinada 8–10%, logo após o treino (substitui a caminhada)';
+  }
+  $('wkCardio').textContent='Cardio: '+cardioTxt;
+
+  var cam=null,rr=$('tasks').children,q;
+  for(q=0;q<rr.length;q++){if(rr[q].getAttribute('data-id')==='caminhada')cam=rr[q];}
+  if(cam){
+    var ct='Caminhada 40 min',cs='fora do treino, pode fracionar';
+    if(f2){
+      if(wdN===3){ct='Caminhada 30 min';cs='dia sem musculação · pode fracionar';}
+      else if(wdN===0){ct='Alongamento 10 min';cs='depois da corrida · sem caminhada extra hoje';}
+      else{ct='Cardio 30 min pós-treino';cs='esteira inclinada · já inclui a caminhada do dia';}
+    }
+    cam.querySelector('.rt').textContent=ct;
+    cam.querySelector('.rs').textContent=cs;
+  }
 
   var j,rows=$('tasks').children;
   for(j=0;j<rows.length;j++){
