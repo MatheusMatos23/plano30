@@ -218,6 +218,22 @@
   .step button{width:32px;height:30px;font-size:17px;color:var(--g-700);padding:0}
   .step b{min-width:16px;text-align:center;font-size:13px}
   .xwarn{margin:6px 0 0;font-size:12px;color:var(--red);line-height:1.5}
+  .wchart{position:relative;margin-top:8px}
+  .wchart svg{display:block;width:100%;overflow:visible}
+  .wtip{position:absolute;top:0;transform:translate(-50%,-110%);background:var(--ink);color:#fff;
+    font-size:11.5px;padding:5px 8px;border-radius:7px;white-space:nowrap;pointer-events:none}
+  .phrow{display:flex;justify-content:space-between;gap:10px;padding:10px 0 0;margin-top:10px;
+    border-top:1px solid var(--hair);font-size:12.5px;color:var(--mid)}
+  .phrow b{color:var(--ink);font-weight:600}
+  .phrow span:last-child{white-space:nowrap}
+  .bk{display:flex;align-items:center;gap:12px;background:#FFFBF0;border-left:3px solid var(--amber);
+    border-radius:14px;padding:13px 15px;margin-bottom:12px;box-shadow:var(--sh)}
+  .bk div{flex:1;min-width:0}
+  .bk b{display:block;font-size:13px;color:#7A5510;margin-bottom:3px}
+  .bk p{margin:0;font-size:12px;color:#6B5526;line-height:1.5}
+  .bk button{padding:9px 14px;font-size:12.5px;font-weight:700;color:#fff;background:#B07A12;
+    border-radius:99px;white-space:nowrap}
+  .bkline{text-align:center;font-size:11.5px;color:var(--faint);margin:2px 0 8px}
   .sum{display:flex;gap:8px}
   .sum div{flex:1;text-align:center;padding:13px 4px;background:#FAFBFA;
     border-radius:12px}
@@ -323,6 +339,11 @@
   </div>
 
   <div class="wrap">
+    <div class="bk hidden" id="bkCard">
+      <div><b>Faça um backup</b><p id="bkTxt"></p></div>
+      <button id="bkBtn">Salvar</button>
+    </div>
+
     <div class="done hidden" id="doneCard">
       <b id="doneTitle">Desafio concluído</b>
       <p id="doneTxt"></p>
@@ -428,6 +449,10 @@
         <p class="howtip">Na primeira medição, anote a referência de cada ponto
         (ex.: 22 cm acima do joelho). Medir em ponto diferente a cada semana produz número sem valor.</p>
       </div>
+      <div id="wchartBox" class="hidden">
+        <p class="htitle">Evolução do peso</p>
+        <div class="wchart" id="wchart"></div>
+      </div>
       <div id="hist"></div>
     </section>
 
@@ -439,6 +464,7 @@
     <section class="card">
       <p class="lbl">Resumo</p>
       <div class="sum" id="sum"></div>
+      <div id="phases"></div>
     </section>
 
     <section class="card">
@@ -465,12 +491,13 @@
       não desistência. Se um dia furar, retome no seguinte: sem jejum e sem treino dobrado.</p>
     </div>
 
+    <p class="bkline" id="bkLine"></p>
     <div class="tools">
       <button id="btnExport">Salvar backup</button>
       <button id="btnImport">Restaurar backup</button>
     </div>
     <button id="reset">Recomeçar o desafio do zero</button>
-    <p class="ver">versão 12 · 9 de outubro</p>
+    <p class="ver">versão 13 · 9 de outubro</p>
   </div>
 </div>
 
@@ -607,7 +634,7 @@ function load(){
     if(r){var o=JSON.parse(r);
       state.start=o.start||null;state.days=o.days||{};
       state.logs=o.logs||{};state.loads=o.loads||{};state.swaps=o.swaps||{};state.plan=o.plan||'1500';
-      state.phase=o.phase||1;state.cycles=o.cycles||[];}
+      state.phase=o.phase||1;state.cycles=o.cycles||[];state.lastBackup=o.lastBackup||null;}
   }catch(e){}
 }
 var saveT=null;
@@ -768,12 +795,12 @@ function buildMeasures(){
     var w=document.createElement('div');w.className='mwrap';
     var inp=document.createElement('input');
     inp.type='number';inp.step=m.st;inp.id='m_'+m.id;
-    inp.setAttribute('inputmode','decimal');inp.placeholder=m.ph;
+    inp.setAttribute('inputmode','decimal');inp.placeholder='—';
     var un=document.createElement('span');un.className='un';un.textContent=m.un;
     inp.addEventListener('change',function(){
       if(!state.logs[view])state.logs[view]={};
       state.logs[view][m.id]=(inp.value==='')?null:parseFloat(inp.value);
-      save();paintHist();paintSum();
+      save();paintChart();paintHist();paintSum();
     });
     w.appendChild(inp);w.appendChild(un);
     f.appendChild(lb);f.appendChild(w);
@@ -1099,6 +1126,98 @@ function paintExtras(){
     w.classList.remove('hidden');
   }else w.classList.add('hidden');
 }
+function paintChart(){
+  var box=$('wchartBox'),host=$('wchart');
+  var ks=valoresDe('peso');
+  if(ks.length<2){box.classList.add('hidden');host.innerHTML='';return;}
+  box.classList.remove('hidden');
+  var W=host.clientWidth||320,H=150,pl=34,pr=34,pt=14,pb=24;
+  var t0=pd(ks[0]).getTime(),t1=pd(ks[ks.length-1]).getTime(),span=Math.max(1,t1-t0);
+  var vs=ks.map(function(k){return state.logs[k].peso;});
+  var mn=Math.min.apply(null,vs),mx=Math.max.apply(null,vs);
+  var lo=Math.floor(mn-1),hi=Math.ceil(mx+1);
+  function X(k){return pl+(pd(k).getTime()-t0)/span*(W-pl-pr);}
+  function Y(v){return pt+(hi-v)/(hi-lo)*(H-pt-pb);}
+  var NS='http://www.w3.org/2000/svg';
+  var svg=document.createElementNS(NS,'svg');
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.setAttribute('height',H);
+  svg.setAttribute('role','img');
+  svg.setAttribute('aria-label','Peso de '+nf(vs[0])+' kg em '+dm(ks[0])+' para '+nf(vs[vs.length-1])+' kg em '+dm(ks[ks.length-1]));
+  function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);svg.appendChild(e);return e;}
+  // grade recessiva: 3 linhas
+  var step=Math.max(1,Math.ceil((hi-lo)/3));
+  for(var g=lo;g<=hi;g+=step){
+    el('line',{x1:pl,x2:W-pr,y1:Y(g),y2:Y(g),stroke:'#EBEEEC','stroke-width':1});
+    var tx=el('text',{x:pl-7,y:Y(g)+4,'text-anchor':'end','font-size':10.5,fill:'#9AA59F'});tx.textContent=g;
+  }
+  // marcos de início de fase
+  (state.cycles||[]).concat([{phase:state.phase,start:state.start}]).forEach(function(c){
+    if(!c.start||c.phase<2)return;
+    var t=pd(c.start).getTime();if(t<=t0||t>t1)return;
+    var x=X(c.start);
+    el('line',{x1:x,x2:x,y1:pt,y2:H-pb,stroke:'#D5DBD7','stroke-width':1});
+    var ft=el('text',{x:x+4,y:pt+8,'font-size':10,fill:'#9AA59F'});ft.textContent='fase '+c.phase;
+  });
+  // área (10%) e linha (2px)
+  var d='',i;
+  for(i=0;i<ks.length;i++)d+=(i?'L':'M')+X(ks[i]).toFixed(1)+' '+Y(vs[i]).toFixed(1);
+  el('path',{d:d+'L'+X(ks[ks.length-1]).toFixed(1)+' '+(H-pb)+'L'+X(ks[0]).toFixed(1)+' '+(H-pb)+'Z',fill:'#12805A','fill-opacity':.1});
+  el('path',{d:d,fill:'none',stroke:'#12805A','stroke-width':2,'stroke-linejoin':'round','stroke-linecap':'round'});
+  // pontos com anel da superfície
+  for(i=0;i<ks.length;i++)el('circle',{cx:X(ks[i]),cy:Y(vs[i]),r:4,fill:'#12805A',stroke:'#fff','stroke-width':2});
+  // rótulos só nas pontas
+  var a=el('text',{x:X(ks[0]),y:H-6,'text-anchor':'start','font-size':10.5,fill:'#9AA59F'});a.textContent=dm(ks[0]);
+  var b=el('text',{x:X(ks[ks.length-1]),y:H-6,'text-anchor':'end','font-size':10.5,fill:'#9AA59F'});b.textContent=dm(ks[ks.length-1]);
+  var lv=el('text',{x:X(ks[ks.length-1])+8,y:Y(vs[vs.length-1])+4,'font-size':11.5,'font-weight':700,fill:'#111916'});
+  lv.textContent=nf(vs[vs.length-1]);
+  host.innerHTML='';host.appendChild(svg);
+  // toque: valor do ponto mais próximo
+  var tip=document.createElement('div');tip.className='wtip hidden';host.appendChild(tip);
+  var ring=document.createElementNS(NS,'circle');ring.setAttribute('r',7);ring.setAttribute('fill','none');
+  ring.setAttribute('stroke','#12805A');ring.setAttribute('stroke-width',2);ring.style.display='none';svg.appendChild(ring);
+  function near(ev){
+    var r=svg.getBoundingClientRect(),cx=((ev.touches?ev.touches[0].clientX:ev.clientX)-r.left)*W/r.width;
+    var bi=0,bd=1e9;for(var j=0;j<ks.length;j++){var dd=Math.abs(X(ks[j])-cx);if(dd<bd){bd=dd;bi=j;}}
+    var px=X(ks[bi]),py=Y(vs[bi]);
+    ring.setAttribute('cx',px);ring.setAttribute('cy',py);ring.style.display='';
+    tip.textContent=dm(ks[bi])+' · '+nf(vs[bi])+' kg';
+    tip.style.left=(px*r.width/W)+'px';tip.style.top=(py*r.width/W)+'px';
+    tip.classList.remove('hidden');
+  }
+  function hide(){tip.classList.add('hidden');ring.style.display='none';}
+  svg.addEventListener('pointerdown',near);svg.addEventListener('pointermove',function(e){if(e.pressure||e.pointerType==='mouse')near(e);});
+  var hT=null;svg.addEventListener('pointerleave',function(e){if(e.pointerType==='mouse')hide();});
+  svg.addEventListener('pointerup',function(){clearTimeout(hT);hT=setTimeout(hide,2500);});
+}
+function paintPhases(){
+  var host=$('phases');host.innerHTML='';
+  (state.cycles||[]).forEach(function(c){
+    var full=0,i;for(i=0;i<30;i++){if(count(add(c.start,i))>=TOTAL)full++;}
+    var ws=valoresDe('peso').filter(function(k){return k>=c.start&&k<=c.end;});
+    var row=document.createElement('div');row.className='phrow';
+    var l=document.createElement('span');
+    var bb=document.createElement('b');bb.textContent='Fase '+c.phase;l.appendChild(bb);
+    l.appendChild(document.createTextNode(' · '+dm(c.start)+' a '+dm(c.end)));
+    var r=document.createElement('span');
+    var txt=full+'/30 dias';
+    if(ws.length>=2){var dif=state.logs[ws[ws.length-1]].peso-state.logs[ws[0]].peso;
+      txt+=' · '+(dif>0?'+':'')+nf(dif.toFixed(1))+' kg';}
+    r.textContent=txt;
+    row.appendChild(l);row.appendChild(r);host.appendChild(row);
+  });
+}
+function paintBackup(){
+  var lb=state.lastBackup,card=$('bkCard'),line=$('bkLine');
+  var dias=lb?Math.floor((pd(today())-pd(lb))/86400000):null;
+  line.textContent=lb?('Último backup: '+(dias===0?'hoje':(dias===1?'ontem':'há '+dias+' dias'))):'Nenhum backup feito ainda';
+  var desde=state.start?Math.max(0,Math.floor((pd(today())-pd((state.cycles&&state.cycles[0])?state.cycles[0].start:state.start))/86400000)):0;
+  var precisa=(lb&&dias>=7)||(!lb&&desde>=7);
+  if(precisa){
+    $('bkTxt').textContent=lb?('O último foi há '+dias+' dias. Seu histórico só existe neste celular.')
+      :('Seu histórico de '+desde+' dias só existe neste celular. Um backup leva 5 segundos.');
+    card.classList.remove('hidden');
+  }else card.classList.add('hidden');
+}
 function paintDay(){
   var i=idx(view),d=day(view),wk=WK[pd(view).getDay()];
   $('dayNum').textContent=(i>0&&i<=30)?(String(i)+' '):'– ';
@@ -1159,7 +1278,7 @@ function paintDay(){
   $('cur').className=(view===today())?'on':'';
   $('prev').className=(view!==today()&&view<today())?'on':'';
 
-  paintWater();paintEx();paintMeals();paintExtras();paintDone();paintHist();paintSum();paintProgress();
+  paintWater();paintEx();paintMeals();paintExtras();paintDone();paintBackup();paintChart();paintHist();paintSum();paintPhases();paintProgress();
 }
 
 function wire(){
@@ -1207,6 +1326,7 @@ function wire(){
       a.download='plano30-backup-'+today()+'.json';
       document.body.appendChild(a);a.click();document.body.removeChild(a);
       setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+      state.lastBackup=today();save();paintBackup();
       toast('Backup salvo nos downloads.');
     }catch(e){toast('Não deu para gerar o backup.');}
   });
@@ -1251,6 +1371,8 @@ function wire(){
     },5000);
   });
 
+  $('bkBtn').addEventListener('click',function(){$('btnExport').click();});
+  window.addEventListener('resize',function(){if(state.start)paintChart();});
   $('xInf').addEventListener('click',function(){
     $('xDet').classList.toggle('hidden');$('xInf').classList.toggle('open');
   });
