@@ -198,6 +198,26 @@
   #hist .k{color:var(--g-500);font-weight:700;margin-left:7px;font-size:12px}
 
   /* resumo */
+  .done{background:linear-gradient(168deg,#FFFFFF,#F2F8F5);border:1px solid #CFE5D9;
+    border-radius:16px;padding:16px 17px;margin-bottom:12px;box-shadow:var(--sh)}
+  .done b{display:block;font-size:15px;color:var(--g-700);margin-bottom:5px;letter-spacing:-.01em}
+  .done p{margin:0;font-size:12.5px;color:var(--mid);line-height:1.55}
+  .go.small{margin-top:13px;width:100%;padding:12px;font-size:14px}
+  .go.small.armed{background:var(--red);box-shadow:none}
+  .xhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .xrow{display:flex;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--hair)}
+  .xhead + .xrow{border-top:none}
+  .xtxt{flex:1;min-width:0}
+  .xcnt{font-size:12px;font-weight:700;color:var(--soft);min-width:28px;text-align:right}
+  .xcnt.ok{color:var(--g-500)}
+  .xcnt.over{color:var(--red)}
+  .xtog{padding:7px 11px;font-size:12px;font-weight:600;border-radius:99px;
+    background:#F2F4F2;color:var(--mid);white-space:nowrap}
+  .xtog.on{background:var(--g-500);color:#fff}
+  .step{display:flex;align-items:center;background:#F2F4F2;border-radius:99px}
+  .step button{width:32px;height:30px;font-size:17px;color:var(--g-700);padding:0}
+  .step b{min-width:16px;text-align:center;font-size:13px}
+  .xwarn{margin:6px 0 0;font-size:12px;color:var(--red);line-height:1.5}
   .sum{display:flex;gap:8px}
   .sum div{flex:1;text-align:center;padding:13px 4px;background:#FAFBFA;
     border-radius:12px}
@@ -303,6 +323,12 @@
   </div>
 
   <div class="wrap">
+    <div class="done hidden" id="doneCard">
+      <b id="doneTitle">Desafio concluído</b>
+      <p id="doneTxt"></p>
+      <button class="go small hidden" id="btnNext"></button>
+    </div>
+
     <nav>
       <button id="prev">Ontem</button>
       <button id="cur" class="on">Hoje</button>
@@ -334,6 +360,47 @@
       </div>
       <p class="planhint" id="planhint"></p>
       <div id="meals"></div>
+    </section>
+
+    <section class="card hidden" id="extrasCard">
+      <div class="xhead">
+        <p class="lbl" style="margin:0">Extras da semana</p>
+        <button class="inf" id="xInf">i</button>
+      </div>
+      <div class="xrow">
+        <div class="xtxt"><div class="rt">Refeição livre</div>
+          <div class="rs">1 por semana · no lugar do jantar de sábado</div></div>
+        <span class="xcnt" id="xLivreCnt">0/1</span>
+        <button class="xtog" id="xLivre">usar hoje</button>
+      </div>
+      <div class="xrow">
+        <div class="xtxt"><div class="rt">Doce</div>
+          <div class="rs">até 2 por semana · no lugar da ceia</div></div>
+        <span class="xcnt" id="xDoceCnt">0/2</span>
+        <div class="step"><button id="xDoceMenos">−</button><b id="xDoceDia">0</b><button id="xDoceMais">+</button></div>
+      </div>
+      <p class="xwarn hidden" id="xWarn"></p>
+      <div class="det hidden" id="xDet" style="padding-left:0">
+        <p class="deth">Refeição livre</p>
+        <ul>
+          <li>Uma refeição, não um dia. Substitui o jantar de sábado, depois do treino.</li>
+          <li>Tamanho de uma refeição normal de restaurante: ~3 fatias de pizza, ou 1 hambúrguer, ou 1 prato de massa. Sem rodízio, sem repetir.</li>
+          <li>Até ~800 kcal mantém a média da semana em 1.500. Uma pizza mais generosa (~1.100) leva a média para ~1.550 — também aceitável.</li>
+          <li>Refrigerante zero. Álcool: se usar, só nessa refeição e no máximo 2 doses.</li>
+          <li>No sábado, sem ceia. No domingo, dieta normal — sem jejum e sem compensar.</li>
+        </ul>
+        <p class="deth">Doce · ~100 a 150 kcal, no lugar da ceia</p>
+        <ul>
+          <li>25 g de chocolate 70% (~145 kcal)</li>
+          <li>1 bombom pequeno, ~20 g (~105 kcal)</li>
+          <li>1 paçoca de rolha, 20 g (~100 kcal)</li>
+          <li>1 bola de sorvete de massa, 60 g (~120 kcal)</li>
+          <li>1 picolé de fruta (~80 kcal)</li>
+          <li>1 brigadeiro, 20 g (~90 kcal)</li>
+          <li>Mousse de whey: 1 dose de whey + 1 col. chá de cacau, batido com pouca água gelada (~130 kcal, 24 g de proteína)</li>
+        </ul>
+        <p class="detf">Trocar a ceia pelo doce custa ~25 g de proteína naquela noite. Duas vezes por semana não pesa; todo dia, pesaria.</p>
+      </div>
     </section>
 
     <section class="card">
@@ -403,7 +470,7 @@
       <button id="btnImport">Restaurar backup</button>
     </div>
     <button id="reset">Recomeçar o desafio do zero</button>
-    <p class="ver">versão 10 · 24 de setembro</p>
+    <p class="ver">versão 11 · 9 de outubro</p>
   </div>
 </div>
 
@@ -418,8 +485,8 @@
 'use strict';
 
 var KEY='plano30:v2';
-var state={start:null,days:{},logs:{},loads:{},swaps:{},plan:'1500'};
-var view=null, showEx=false, armed=false, armTimer=null;
+var state={start:null,days:{},logs:{},loads:{},swaps:{},plan:'1500',phase:1,cycles:[]};
+var view=null, showEx=false, armed=false, armTimer=null, nextArmed=false, nextTimer=null;
 
 var TASKS=[
   {id:'treino',t:'Treino do dia',s:'academia ou corrida, conforme o dia'},
@@ -527,6 +594,7 @@ function pd(s){var p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2]);}
 function today(){return iso(new Date());}
 function add(s,n){var d=pd(s);d.setDate(d.getDate()+n);return iso(d);}
 function idx(s){return Math.round((pd(s)-pd(state.start))/86400000)+1;}
+function dm(s){var d=pd(s);return d.getDate()+'/'+(d.getMonth()+1);}
 function nf(v){return String(v).replace('.',',');}
 function pretty(s){
   var t=pd(s).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
@@ -538,7 +606,8 @@ function load(){
     var r=localStorage.getItem(KEY);
     if(r){var o=JSON.parse(r);
       state.start=o.start||null;state.days=o.days||{};
-      state.logs=o.logs||{};state.loads=o.loads||{};state.swaps=o.swaps||{};state.plan=o.plan||'1500';}
+      state.logs=o.logs||{};state.loads=o.loads||{};state.swaps=o.swaps||{};state.plan=o.plan||'1500';
+      state.phase=o.phase||1;state.cycles=o.cycles||[];}
   }catch(e){}
 }
 var saveT=null;
@@ -616,8 +685,9 @@ function count(d){
 }
 function isFull(d){return count(d)>=TOTAL;}
 function weekOf(d){var i=idx(d);return Math.min(4,Math.max(1,Math.ceil(i/7)));}
+function trainWeek(d){return Math.min(4,weekOf(d)+((state.phase||1)-1)*4);}
 function setsFor(v,d){return (Object.prototype.toString.call(v)==='[object Array]')
-  ? v[weekOf(d)-1] : v;}
+  ? v[trainWeek(d)-1] : v;}
 function exDone(d){
   var x=state.days[d];if(!x||!x.ex)return 0;
   var wk=WK[pd(d).getDay()],n=0;
@@ -826,7 +896,7 @@ function paintEx(){
       var prev=lastLoad(name,view);
       if(prev){
         var sm=document.createElement('small');
-        sm.textContent='última: '+nf(prev.kg)+' kg · dia '+idx(prev.date);
+        sm.textContent='última: '+nf(prev.kg)+' kg · '+dm(prev.date);
         nm.appendChild(sm);
       }
     }
@@ -855,7 +925,7 @@ function paintEx(){
         save();paintEx();
       });
       var pv=lastLoad(name,view);
-      if(pv&&weekOf(view)>=2&&inp.value===''){
+      if(pv&&trainWeek(view)>=2&&inp.value===''){
         var alvo=Math.round(pv.kg*1.05/2.5)*2.5;
         if(alvo<=pv.kg)alvo=pv.kg+2.5;
         var sug=document.createElement('button');sug.className='sug';
@@ -932,7 +1002,7 @@ function paintSum(){
   }
   box(done+'/'+elapsed,'dias completos');
   box(ad+'%','adesão');
-  if(dif!==null)box((dif>0?'+':'')+nf(dif.toFixed(1))+' kg','desde o dia 1',dif<0?'neg':'');
+  if(dif!==null)box((dif>0?'+':'')+nf(dif.toFixed(1))+' kg','desde '+dm(pesos[0]),dif<0?'neg':'');
   else box('—','peso: falta 2ª pesagem');
 }
 function valoresDe(id){
@@ -966,7 +1036,7 @@ function paintHist(){
     vl.appendChild(document.createTextNode(nf(ult)+' '+m.un));
     if(ks.length>1){
       var em=document.createElement('em');
-      em.textContent='dia '+idx(ks[0])+': '+nf(prim);
+      em.textContent=dm(ks[0])+': '+nf(prim);
       vl.appendChild(em);
     }
     var dd=document.createElement('span');dd.className='mdd';
@@ -980,10 +1050,59 @@ function paintHist(){
     host.appendChild(row);
   });
 }
+function paintDone(){
+  var di=idx(today()),ph=state.phase||1,c=$('doneCard'),b=$('btnNext');
+  if(di<30){c.classList.add('hidden');return;}
+  c.classList.remove('hidden');
+  if(di===30){
+    $('doneTitle').textContent='Último dia da fase '+ph;
+    $('doneTxt').textContent='Feche o dia de hoje. A partir de amanhã você pode iniciar a fase '+(ph+1)+
+      ' — medidas, cargas e trocas de exercício continuam.';
+    b.classList.add('hidden');
+    return;
+  }
+  $('doneTitle').textContent='Fase '+ph+' concluída';
+  $('doneTxt').textContent='Medidas, cargas e trocas de exercício seguem para a próxima fase. '+
+    'As marcações diárias recomeçam do dia 1, e o treino continua no nível da semana 4.';
+  if(!nextArmed)b.textContent='Iniciar fase '+(ph+1)+' hoje';
+  b.classList.remove('hidden');
+}
+function weekDates(d){
+  var off=(pd(d).getDay()+6)%7,mon=add(d,-off),r=[],i;
+  for(i=0;i<7;i++)r.push(add(mon,i));
+  return r;
+}
+function paintExtras(){
+  var card=$('extrasCard');
+  if((state.phase||1)<2){card.classList.add('hidden');return;}
+  card.classList.remove('hidden');
+  var wd=weekDates(view),livres=0,doces=0;
+  wd.forEach(function(x){
+    var o=state.days[x];if(!o)return;
+    if(o.livre)livres++;
+    doces+=(o.doces||0);
+  });
+  var d=day(view);
+  var t=$('xLivre');
+  t.textContent=d.livre?'usada hoje':'usar hoje';
+  if(d.livre)t.classList.add('on');else t.classList.remove('on');
+  $('xDoceDia').textContent=String(d.doces||0);
+
+  var lc=$('xLivreCnt'),dc=$('xDoceCnt');
+  lc.textContent=livres+'/1';dc.textContent=doces+'/2';
+  lc.className='xcnt'+(livres>1?' over':(livres===1?' ok':''));
+  dc.className='xcnt'+(doces>2?' over':(doces>0?' ok':''));
+
+  var w=$('xWarn');
+  if(livres>1||doces>2){
+    w.textContent='Acima do combinado nesta semana. Sem compensar com jejum ou treino extra — só volte ao plano na próxima refeição.';
+    w.classList.remove('hidden');
+  }else w.classList.add('hidden');
+}
 function paintDay(){
   var i=idx(view),d=day(view),wk=WK[pd(view).getDay()];
   $('dayNum').textContent=(i>0&&i<=30)?(String(i)+' '):'– ';
-  $('dateStr').textContent=pretty(view);
+  $('dateStr').textContent=((state.phase||1)>1?('Fase '+state.phase+' · '):'')+pretty(view);
 
   $('wkName').textContent='';
   $('wkName').appendChild(document.createTextNode(wk.n+' '));
@@ -1020,7 +1139,7 @@ function paintDay(){
   $('cur').className=(view===today())?'on':'';
   $('prev').className=(view!==today()&&view<today())?'on':'';
 
-  paintWater();paintEx();paintMeals();paintHist();paintSum();paintProgress();
+  paintWater();paintEx();paintMeals();paintExtras();paintDone();paintHist();paintSum();paintProgress();
 }
 
 function wire(){
@@ -1083,6 +1202,7 @@ function wire(){
           if(!o||!o.start)throw new Error('formato');
           state.start=o.start;state.days=o.days||{};
           state.logs=o.logs||{};state.loads=o.loads||{};state.swaps=o.swaps||{};state.plan=o.plan||'1500';
+          state.phase=o.phase||1;state.cycles=o.cycles||[];
           save();start();toast('Backup restaurado.');
         }catch(e){toast('Arquivo inválido. Use um backup deste app.');}
       };
@@ -1096,6 +1216,7 @@ function wire(){
     if(armed){
       clearTimeout(armTimer);armed=false;
       state.start=null;state.days={};state.logs={};state.loads={};state.swaps={};state.plan='1500';
+      state.phase=1;state.cycles=[];
       try{localStorage.removeItem(KEY);}catch(e){}
       b.classList.remove('armed');
       b.textContent='Recomeçar o desafio do zero';
@@ -1107,6 +1228,37 @@ function wire(){
     armTimer=setTimeout(function(){
       armed=false;b.classList.remove('armed');
       b.textContent='Recomeçar o desafio do zero';
+    },5000);
+  });
+
+  $('xInf').addEventListener('click',function(){
+    $('xDet').classList.toggle('hidden');$('xInf').classList.toggle('open');
+  });
+  $('xLivre').addEventListener('click',function(){
+    var d=day(view);d.livre=!d.livre;
+    if(d.livre&&pd(view).getDay()!==6)toast('Registrado. O combinado é sábado, no lugar do jantar.');
+    buzz();save();paintExtras();
+  });
+  $('xDoceMais').addEventListener('click',function(){
+    var d=day(view);d.doces=Math.min(5,(d.doces||0)+1);buzz();save();paintExtras();
+  });
+  $('xDoceMenos').addEventListener('click',function(){
+    var d=day(view);d.doces=Math.max(0,(d.doces||0)-1);buzz();save();paintExtras();
+  });
+  $('btnNext').addEventListener('click',function(){
+    var b=$('btnNext'),ph=state.phase||1;
+    if(nextArmed){
+      clearTimeout(nextTimer);nextArmed=false;b.classList.remove('armed');
+      state.cycles.push({phase:ph,start:state.start,end:add(state.start,29)});
+      state.phase=ph+1;state.start=today();
+      save();start();window.scrollTo(0,0);
+      toast('Fase '+state.phase+' iniciada. Histórico mantido.');
+      return;
+    }
+    nextArmed=true;b.classList.add('armed');
+    b.textContent='Confirmar: iniciar fase '+(ph+1)+' hoje';
+    nextTimer=setTimeout(function(){
+      nextArmed=false;b.classList.remove('armed');paintDone();
     },5000);
   });
 
