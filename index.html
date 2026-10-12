@@ -267,6 +267,31 @@
   .xkcal span{flex:1}
   .xkcal input[type=number]{width:90px;padding:8px 9px;text-align:center}
   .xkcal em{font-style:normal;font-size:11.5px;color:var(--faint)}
+  .xsec{margin-top:14px;padding-top:12px;border-top:1px solid var(--hair)}
+  .xsh{display:flex;justify-content:space-between;align-items:center}
+  .xsh b{font-size:13px;font-weight:600}
+  .arow{display:flex;align-items:center;gap:8px;margin-top:8px}
+  .arow input[type=number]{width:84px;padding:9px;text-align:center}
+  .arow em{font-style:normal;font-size:11.5px;color:var(--faint)}
+  .aprev{flex:1;font-size:12px;color:var(--g-700);font-weight:600}
+  .aform{margin-top:10px;padding:12px;background:#FAFBFA;border-radius:12px}
+  .aform select{width:100%;padding:10px;font-size:15px;font-family:inherit;border:1px solid var(--line);
+    border-radius:10px;background:var(--card);color:var(--ink)}
+  .aform .go.small{width:auto;margin:0;padding:9px 14px;font-size:13px}
+  .aitem{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--hair);font-size:13px}
+  .aitem:last-child{border-bottom:none}
+  .aitem span{flex:1;color:var(--mid)}
+  .aitem b{color:var(--g-700);font-weight:700;white-space:nowrap}
+  .aitem button{width:26px;height:26px;border-radius:50%;color:var(--faint);font-size:15px;padding:0}
+  .calcbtn{width:100%;display:flex;justify-content:space-between;gap:10px;text-align:left;
+    font-size:12.5px;font-weight:600;color:var(--g-700);padding:2px 0}
+  .calc{margin-top:10px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chips button{padding:7px 11px;font-size:12px;border-radius:99px;background:#F2F4F2;color:var(--mid)}
+  .chips button.sel{background:var(--g-500);color:#fff}
+  .cres{margin-top:10px;font-size:12.5px;color:var(--mid);line-height:1.7}
+  .cres b{color:var(--ink)}
+  .bline.warn{color:#7A5510}
   .sum{display:flex;gap:8px}
   .sum div{flex:1;text-align:center;padding:13px 4px;background:#FAFBFA;
     border-radius:12px}
@@ -437,6 +462,35 @@
       <p class="bline" id="bLine"></p>
       <p class="bsub" id="bSub"></p>
       <p class="bsub" id="bWeek"></p>
+
+      <div class="xsec">
+        <div class="xsh"><b>Atividade extra</b><button class="mtog" id="aAdd">+ Adicionar</button></div>
+        <div id="aList"></div>
+        <div class="aform hidden" id="aForm">
+          <select id="aTipo"></select>
+          <div class="arow">
+            <input type="number" inputmode="numeric" id="aMin" placeholder="min">
+            <em id="aUn">min</em>
+            <span class="aprev" id="aPrev"></span>
+            <button class="go small" id="aSave">Adicionar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="xsec">
+        <button class="calcbtn" id="cBtn"><span>Vai comer algo a mais? Veja quanto queimar</span><span id="cArrow">+</span></button>
+        <div class="calc hidden" id="calc">
+          <div class="chips">
+            <button data-k="125">1 doce</button>
+            <button data-k="90">1 cerveja 210 ml</button>
+            <button data-k="150">1 lata de cerveja</button>
+            <button data-k="280">1 fatia de pizza</button>
+            <button data-k="250">1 pão de queijo grande + café</button>
+          </div>
+          <div class="arow"><input type="number" inputmode="numeric" id="cK" placeholder="kcal"><em>kcal</em></div>
+          <div id="cOut"></div>
+        </div>
+      </div>
     </section>
 
     <section class="card hidden" id="extrasCard">
@@ -563,7 +617,7 @@
       <button id="btnImport">Restaurar backup</button>
     </div>
     <button id="reset">Recomeçar o desafio do zero</button>
-    <p class="ver">versão 16 · 12 de outubro</p>
+    <p class="ver">versão 18 · 12 de outubro</p>
   </div>
 </div>
 
@@ -1178,8 +1232,30 @@ function consumo(d){
     else if(x.done&&x.done[m.id]){var a=mealAvg(m.id);r.kcal+=a.kcal;r.p+=a.p;r.n++;r.legacy++;}
   });
   if(x.doces){r.kcal+=x.doces*125;r.p+=x.doces*2;r.extra=true;}
-  if(x.livre){r.kcal+=(x.livreKcal||1000);r.p+=40;r.livre=true;r.extra=true;}
+  if(x.livre){r.kcal+=(x.livreKcal!=null?x.livreKcal:1000);r.p+=40;r.livre=true;r.extra=true;}
   return r;
+}
+var ATIV=[
+  {id:'cam',  t:'Caminhada rápida (5–6 km/h)',  net:3.3},
+  {id:'caml', t:'Caminhada leve (4 km/h)',      net:2.0},
+  {id:'est',  t:'Esteira inclinada 8–10%',      net:6.0},
+  {id:'bike', t:'Bicicleta moderada',           net:5.0},
+  {id:'corr', t:'Corrida leve (8 km/h)',        net:7.3},
+  {id:'musc', t:'Musculação extra',             net:3.0},
+  {id:'kcal', t:'Outro (informar kcal)',        net:0}
+];
+function ativKcal(tipo,min,W){var a=ATIV.filter(function(x){return x.id===tipo;})[0];
+  return a?a.net*W*min/60:0;}
+function minPara(kcal,net,W){return Math.ceil(kcal/(net*W)*60/5)*5;}
+function extraKcal(d){
+  var x=state.days[d];if(!x||!x.extra)return 0;
+  return x.extra.reduce(function(s,e){return s+(e.kcal||0);},0);
+}
+function livreAllowance(d){
+  var x=state.days[d];if(!x||!x.livre)return 0;
+  var wd=weekDates(d),i;
+  for(i=0;i<wd.length;i++){var o=state.days[wd[i]];if(o&&o.livre)return wd[i]===d?600:0;}
+  return 0;
 }
 function gasto(d){
   var W=pesoEm(d),x=state.days[d]||{done:{}},dn=x.done||{},wd=pd(d).getDay(),ph=phaseAt(d);
@@ -1193,7 +1269,8 @@ function gasto(d){
     if(ph>=2){if(wd===3)cardio=2.5*W*30/60;else if(wd!==0)cardio=6*W*30/60;}
     else cardio=3*W*40/60;
   }
-  return {base:base,treino:treino,cardio:cardio,total:base+treino+cardio};
+  var extra=extraKcal(d);
+  return {base:base,treino:treino,cardio:cardio,extra:extra,total:base+treino+cardio+extra};
 }
 function paintBalance(){
   var c=consumo(view),g=gasto(view),tk=metaKcal(),tp=metaP();
@@ -1203,19 +1280,32 @@ function paintBalance(){
   $('bSaldo').textContent=(sd>0?'+':'−')+fmtk(Math.abs(sd));
   var max=tk*1.3;
   $('bMeter').style.width=Math.min(100,c.kcal/max*100)+'%';
-  $('bMeter').className=(c.kcal>tk*1.07&&!c.livre)?'over':'';
   $('bMark').style.left='calc('+(tk/max*100).toFixed(1)+'% - 1px)';
 
-  var falta=tk-c.kcal,fp=Math.max(0,tp-c.p),txt;
-  if(c.n===0&&!c.extra)txt='Toque em cada refeição para registrar o que comeu, ou marque "pulei".';
-  else if(c.livre)txt='Dia de refeição livre: ~'+fmtk(c.kcal)+' kcal no total. Amanhã o plano segue normal, sem compensar.';
-  else if(falta>60)txt='Faltam ~'+fmtk(falta)+' kcal'+(fp>5?' e '+fp+' g de proteína':'')+' para a meta de '+fmtk(tk)+'.';
-  else if(c.kcal>tk+150)txt='Acima da meta em '+fmtk(c.kcal-tk)+' kcal. Sem compensar amanhã: só volte ao plano.';
-  else txt='Meta de calorias atingida'+(fp>5?' — faltam '+fp+' g de proteína; uma dose de whey resolve.':', com '+c.p+' g de proteína.');
+  var W=pesoEm(view),alvo=tk+livreAllowance(view),ex=g.extra;
+  var exced=c.kcal-alvo-ex,falta=alvo-c.kcal,fp=Math.max(0,tp-c.p),txt,warn=false;
+  var protTxt=fp>5?' Ainda faltam '+fp+' g de proteína; uma dose de whey resolve.':'';
+  if(c.n===0&&!c.extra&&!ex)txt='Toque em cada refeição para registrar o que comeu, ou marque "pulei".';
+  else if(exced>60){
+    var m1=minPara(exced,3.3,W),m2=minPara(exced,6.0,W);
+    txt='Você está ~'+fmtk(exced)+' kcal acima do planejado'+(ex?' (já descontada a atividade extra)':'')+
+      '. Para zerar: ~'+m1+' min de caminhada rápida ou ~'+m2+' min de esteira inclinada.'+
+      (m1>90?' Passar de 1h30 de exercício extra não vale o desgaste: aceite a diferença, ela se dilui na média da semana.':'')+
+      ' Sem jejum amanhã.';
+    warn=true;
+  }
+  else if(c.kcal>alvo+60)txt='Acima da meta em '+fmtk(c.kcal-alvo)+' kcal, mas a atividade extra ('+fmtk(ex)+' kcal) já cobriu. Dia zerado em relação ao plano.'+protTxt;
+  else if(c.livre&&livreAllowance(view)>0)txt='Dia de refeição livre dentro do combinado (margem de 600 kcal já prevista). Amanhã o plano segue normal.'+protTxt;
+  else if(falta>60)txt='Faltam ~'+fmtk(falta)+' kcal'+(fp>5?' e '+fp+' g de proteína':'')+' para a meta de '+fmtk(alvo)+'.'+
+      (ex>60?' A atividade extra abriu mais ~'+fmtk(ex)+' kcal de folga, se quiser.':'');
+  else txt=(c.livre?'Dia de refeição livre dentro do combinado.':'Meta de calorias atingida.')+(protTxt||(' Proteína: '+c.p+' g.'));
   $('bLine').textContent=txt;
+  $('bLine').className='bline'+(warn?' warn':'');
+  $('bMeter').className=warn?'over':'';
+  paintActivities();paintCalc();
 
   $('bSub').textContent='Gasto = repouso e rotina '+fmtk(g.base)+
-    (g.treino?' + treino '+fmtk(g.treino):'')+(g.cardio?' + cardio '+fmtk(g.cardio):'')+
+    (g.treino?' + treino '+fmtk(g.treino):'')+(g.cardio?' + cardio '+fmtk(g.cardio):'')+(g.extra?' + extra '+fmtk(g.extra):'')+
     ' kcal. É estimativa (±15%); o consumo é o número que você controla.'+
     (c.legacy?' Refeições sem detalhe contam pela média do plano.':'');
 
@@ -1226,6 +1316,53 @@ function paintBalance(){
     if(cc.n>=3||cc.livre){soma+=cc.kcal;nd++;}
   });
   $('bWeek').textContent=nd>=2?('Média desta semana: '+fmtk(soma/nd)+' kcal por dia, em '+nd+' dias registrados.'):'';
+}
+var aOpen=false,calcOpen=false,calcK=null;
+function paintActivities(){
+  var x=day(view),host=$('aList');host.innerHTML='';
+  (x.extra||[]).forEach(function(e,i){
+    var a=ATIV.filter(function(z){return z.id===e.tipo;})[0];
+    var r=document.createElement('div');r.className='aitem';
+    var sp=document.createElement('span');sp.textContent=(a?a.t:'Atividade')+(e.min?' · '+e.min+' min':'');
+    var b=document.createElement('b');b.textContent='−'+fmtk(e.kcal)+' kcal';
+    var rm=document.createElement('button');rm.textContent='×';rm.setAttribute('aria-label','Remover');
+    rm.addEventListener('click',function(){x.extra.splice(i,1);save();paintBalance();});
+    r.appendChild(sp);r.appendChild(b);r.appendChild(rm);host.appendChild(r);
+  });
+  if(aOpen)$('aForm').classList.remove('hidden');else $('aForm').classList.add('hidden');
+  $('aAdd').textContent=aOpen?'Cancelar':'+ Adicionar';
+  aPreview();
+}
+function aPreview(){
+  var tipo=$('aTipo').value,v=parseFloat($('aMin').value);
+  $('aUn').textContent=tipo==='kcal'?'kcal':'min';
+  $('aMin').placeholder=tipo==='kcal'?'kcal':'min';
+  if(isNaN(v)||v<=0){$('aPrev').textContent='';return;}
+  var k=tipo==='kcal'?v:ativKcal(tipo,v,pesoEm(view));
+  $('aPrev').textContent='≈ '+fmtk(k)+' kcal';
+}
+function paintCalc(){
+  if(calcOpen)$('calc').classList.remove('hidden');else $('calc').classList.add('hidden');
+  $('cArrow').textContent=calcOpen?'–':'+';
+  var out=$('cOut');out.innerHTML='';
+  var k=calcK;if(!k||k<=0)return;
+  var W=pesoEm(view),c=consumo(view),alvo=metaKcal()+livreAllowance(view),ex=extraKcal(view);
+  var folga=Math.max(0,alvo+ex-c.kcal),precisa=Math.max(0,k-folga);
+  var p=document.createElement('div');p.className='cres';
+  if(precisa<=0){
+    p.innerHTML='';p.appendChild(document.createTextNode('Cabe no dia de hoje: ainda há ~'+fmtk(folga)+' kcal de folga. Não precisa queimar nada.'));
+  }else{
+    var lines=[['caminhada rápida',3.3],['esteira inclinada',6.0],['bicicleta',5.0],['corrida leve',7.3]];
+    var t=document.createElement('div');
+    t.textContent=(folga>0?'Descontando a folga de ~'+fmtk(folga)+' kcal, faltam ':'Para zerar ')+fmtk(precisa)+' kcal:';
+    p.appendChild(t);
+    lines.forEach(function(l){
+      var d=document.createElement('div');var b=document.createElement('b');
+      b.textContent='~'+minPara(precisa,l[1],W)+' min';d.appendChild(b);
+      d.appendChild(document.createTextNode(' de '+l[0]));p.appendChild(d);
+    });
+  }
+  out.appendChild(p);
 }
 function paintSum(){
   var done=0,partial=0,i,t=today(),elapsed=0;
@@ -1336,7 +1473,7 @@ function paintExtras(){
   if(d.livre)t.classList.add('on');else t.classList.remove('on');
   $('xDoceDia').textContent=String(d.doces||0);
   if(d.livre){$('xLivreBox').classList.remove('hidden');
-    if(document.activeElement!==$('xLivreKcal'))$('xLivreKcal').value=d.livreKcal||'';}
+    if(document.activeElement!==$('xLivreKcal'))$('xLivreKcal').value=(d.livreKcal!=null?d.livreKcal:'');}
   else $('xLivreBox').classList.add('hidden');
 
   var lc=$('xLivreCnt'),dc=$('xDoceCnt');
@@ -1346,7 +1483,7 @@ function paintExtras(){
 
   var w=$('xWarn');
   if(livres>1||doces>2){
-    w.textContent='Acima do combinado nesta semana. Sem compensar com jejum ou treino extra — só volte ao plano na próxima refeição.';
+    w.textContent='Acima do combinado nesta semana. Sem jejum: se quiser, compense com atividade extra (veja o Balanço do dia) ou só volte ao plano na próxima refeição.';
     w.classList.remove('hidden');
   }else w.classList.add('hidden');
 }
@@ -1512,7 +1649,7 @@ function paintDay(){
   $('cur').className=(view===today())?'on':'';
   $('prev').className=(view!==today()&&view<today())?'on':'';
 
-  openPick=null;mOpen=null;
+  openPick=null;mOpen=null;aOpen=false;
   paintWater();paintEx();paintMeals();paintExtras();paintDone();paintBackup();paintMeasureBox();paintChart();paintHist();paintSum();paintPhases();paintProgress();
 }
 
@@ -1539,6 +1676,25 @@ function wire(){
     })(pbs[pi]);
   }
 
+  ATIV.forEach(function(a){var o=document.createElement('option');o.value=a.id;o.textContent=a.t;$('aTipo').appendChild(o);});
+  $('aAdd').addEventListener('click',function(){aOpen=!aOpen;$('aMin').value='';paintActivities();});
+  $('aTipo').addEventListener('change',aPreview);
+  $('aMin').addEventListener('input',aPreview);
+  $('aSave').addEventListener('click',function(){
+    var tipo=$('aTipo').value,v=parseFloat($('aMin').value);
+    if(isNaN(v)||v<=0){toast(tipo==='kcal'?'Informe as calorias.':'Informe os minutos.');return;}
+    var x=day(view);if(!x.extra)x.extra=[];
+    x.extra.push(tipo==='kcal'?{tipo:tipo,kcal:Math.round(v)}:{tipo:tipo,min:Math.round(v),kcal:Math.round(ativKcal(tipo,v,pesoEm(view)))});
+    aOpen=false;buzz();save();paintBalance();toast('Atividade extra registrada.');
+  });
+  $('cBtn').addEventListener('click',function(){calcOpen=!calcOpen;paintCalc();});
+  var chips=document.querySelectorAll('.chips button'),ci;
+  for(ci=0;ci<chips.length;ci++){(function(b){b.addEventListener('click',function(){
+    for(var j=0;j<chips.length;j++)chips[j].classList.remove('sel');
+    b.classList.add('sel');calcK=+b.getAttribute('data-k');$('cK').value=calcK;paintCalc();});})(chips[ci]);}
+  $('cK').addEventListener('input',function(){
+    for(var j=0;j<chips.length;j++)chips[j].classList.remove('sel');
+    calcK=parseFloat($('cK').value)||null;paintCalc();});
   $('mTog').addEventListener('click',function(){
     mOpen=$('mEdit').classList.contains('hidden');paintMeasureBox();
   });
@@ -1616,7 +1772,8 @@ function wire(){
   });
   $('xLivre').addEventListener('click',function(){
     var d=day(view);d.livre=!d.livre;
-    if(d.livre&&pd(view).getDay()!==6)toast('Registrado. O combinado é sábado, no lugar do jantar.');
+    if(d.livre)toast(pd(view).getDay()!==6?'Registrado. O combinado é sábado. Marque como "pulei" a refeição que ela substituiu.'
+      :'Registrado. Marque o jantar como "pulei" e informe a estimativa de kcal.');
     buzz();save();paintExtras();paintBalance();
   });
   $('xLivreKcal').addEventListener('change',function(){
