@@ -563,7 +563,7 @@
       <button id="btnImport">Restaurar backup</button>
     </div>
     <button id="reset">Recomeçar o desafio do zero</button>
-    <p class="ver">versão 15 · 12 de outubro</p>
+    <p class="ver">versão 16 · 12 de outubro</p>
   </div>
 </div>
 
@@ -783,10 +783,14 @@ function weekOf(d){var i=idx(d);return Math.min(4,Math.max(1,Math.ceil(i/7)));}
 function trainWeek(d){return Math.min(4,weekOf(d)+((state.phase||1)-1)*4);}
 function setsFor(v,d){return (Object.prototype.toString.call(v)==='[object Array]')
   ? v[trainWeek(d)-1] : v;}
+function exChecked(x,wd,orig){
+  var sn=state.swaps[wd+'|'+orig];
+  return !!(x.ex[orig]||(sn&&x.ex[sn]));
+}
 function exDone(d){
   var x=state.days[d];if(!x||!x.ex)return 0;
-  var wk=WK[pd(d).getDay()],n=0;
-  wk.ex.forEach(function(e){if(x.ex[e[0]])n++;});
+  var wd=pd(d).getDay(),wk=WK[wd],n=0;
+  wk.ex.forEach(function(e){if(exChecked(x,wd,e[0]))n++;});
   return n;
 }
 function streak(){
@@ -960,15 +964,17 @@ function paintEx(){
     var wd=pd(view).getDay(), skey=wd+'|'+e[0];
     var name=state.swaps[skey]||e[0];
     var row=document.createElement('div');row.className='exrow';
-    if(d0.ex[name])row.classList.add('on');
+    if(exChecked(d0,wd,e[0]))row.classList.add('on');
     var bx=document.createElement('button');bx.className='bx exbx';
     bx.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" '+
       'stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
     bx.addEventListener('click',function(ev){
       ev.stopPropagation();
       var dd=day(view);
-      dd.ex[name]=!dd.ex[name];
-      if(dd.ex[name])row.classList.add('on');else row.classList.remove('on');
+      var novo=!exChecked(dd,wd,e[0]);
+      if(name!==e[0])delete dd.ex[name];
+      dd.ex[e[0]]=novo;
+      if(novo)row.classList.add('on');else row.classList.remove('on');
       buzz();save();
       $('exBtn').textContent='Esconder exercícios · '+exDone(view)+' de '+wk.ex.length;
       if(exDone(view)===wk.ex.length&&!dd.done.treino){
